@@ -193,3 +193,69 @@ resource "aws_autoscaling_group" "web_asg" {
     propagate_at_launch = true
   }
 }
+# ==========================================
+# DATABASE TIER (RDS REGION - CONTINUING AFTER AUTOSCALING)
+# ==========================================
+
+# 15. Private Subnet 1 for DB (AZ: us-east-1a)
+resource "aws_subnet" "private_db_1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = "us-east-1a"
+  tags              = { Name = "3Tier-Private-DB-1" }
+}
+
+# 16. Private Subnet 2 for DB (AZ: us-east-1b)
+resource "aws_subnet" "private_db_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.12.0/24"
+  availability_zone = "us-east-1b"
+  tags              = { Name = "3Tier-Private-DB-2" }
+}
+
+# 17. RDS Subnet Group (NAME FIXED TO PLAIN TEXT)
+resource "aws_db_subnet_group" "db_subnet_group" {
+  name       = "dbsubnet"
+  subnet_ids = [aws_subnet.private_db_1.id, aws_subnet.private_db_2.id]
+  tags       = { Name = "3Tier-DB-Subnet-Group" }
+}
+
+# 18. Database Security Group (Tight Security Firewall)
+resource "aws_security_group" "db_sg" {
+  name        = "db-layer-sg"
+  description = "Allow MySQL traffic ONLY from Web Servers"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id] # Sirf web_sg allowed hai
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = { Name = "3Tier-DB-SG" }
+}
+
+# 19. AWS RDS MySQL Database Instance
+resource "aws_db_instance" "mysql" {
+  allocated_storage      = 20
+  max_allocated_storage  = 50
+  engine                 = "mysql"
+  engine_version         = "8.0"
+  instance_class         = "db.t3.micro"
+  db_name                = "threetierdb"
+  username               = "admin"
+  password               = "SuperSecretPassword123"
+  db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.db_sg.id]
+  skip_final_snapshot    = true
+  multi_az               = false
+
+  tags = { Name = "3Tier-MySQL-Database" }
+}
