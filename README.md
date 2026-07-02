@@ -22,18 +22,22 @@ If you want to clone this repository and deploy this infrastructure yourself, fo
 
 Bash
 terraform init
+
 Review the Blueprint: (Check what resources will be created)
 
 Bash
 terraform plan
+
 Deploy to AWS: (Creates the full 3-Tier setup automatically)
 
 Bash
 terraform apply --auto-approve
+
 Clean Up / Avoid Billing: (Deletes everything once you are done)
 
 Bash
 terraform destroy --auto-approve
+
 🛠️ Project Development Journey: Step-by-Step Execution
 Below is the exact chronological sequence of how this project was built, showing what was done, why it was done, and which file was modified at each stage.
 
